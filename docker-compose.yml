@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      META_API_KEY: ${META_API_KEY:-}
+      MODAL_TOKEN_ID: ${MODAL_TOKEN_ID:-}
+      MODAL_TOKEN_SECRET: ${MODAL_TOKEN_SECRET:-}
+      BASETEN_API_KEY: ${BASETEN_API_KEY:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/cache:/app/cache
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

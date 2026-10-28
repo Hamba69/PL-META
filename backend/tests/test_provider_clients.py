@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest.mock import Mock, patch
 
 import requests
 
@@ -8,10 +9,26 @@ from backend.app.provider_clients import (
     _parse_responses_text,
     _parse_sam_boxes,
     _spark_cost,
+    ProviderClients,
+    ProviderError,
 )
 
 
 class ProviderResponseTests(unittest.TestCase):
+    def test_empty_baseten_reply_still_records_returned_usage(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {"usage": {"prompt_tokens": 10, "completion_tokens": 512},
+                                      "choices": [{"message": {"content": ""}}]}
+        tracker = Mock()
+        with patch.dict("os.environ", {"META_API_KEY": "test-key", "BASETEN_API_KEY": "test-key"}), patch(
+            "backend.app.provider_clients.requests.post", return_value=response
+        ):
+            client = ProviderClients(tracker)
+            with self.assertRaisesRegex(ProviderError, "no user-facing text"):
+                client.baseten_spark_open("test prompt", "test-run")
+        tracker.record_call.assert_called_once()
+        self.assertEqual(tracker.record_call.call_args.kwargs["units"], 522)
+
     def test_responses_api_reads_user_facing_text_and_usage(self):
         response = requests.Response()
         response.status_code = 200

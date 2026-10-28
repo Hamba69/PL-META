@@ -202,8 +202,6 @@ class ProviderClients:
             output_tokens = int(usage["completion_tokens"])
         except (ValueError, KeyError, TypeError, IndexError) as error:
             raise ProviderError("Baseten returned an invalid completion response.") from error
-        if not isinstance(text, str) or not text.strip():
-            raise ProviderError("Baseten Muse Spark Open returned no user-facing text.")
         cost = _spark_cost(input_tokens, output_tokens)
         self.cost_tracker.record_call(
             run_id=run_id,
@@ -213,6 +211,8 @@ class ProviderClients:
             units=input_tokens + output_tokens,
             cost_usd=cost,
         )
+        if not isinstance(text, str) or not text.strip():
+            raise ProviderError("Baseten Muse Spark Open returned no user-facing text.")
         return TextResult(text, input_tokens, output_tokens, cost, "completed")
 
     def segment_video(

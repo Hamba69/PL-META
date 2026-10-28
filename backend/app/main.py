@@ -8,6 +8,7 @@ import tempfile
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from .pipeline import (
@@ -32,6 +33,17 @@ app = FastAPI(
     description="Infrastructure for trusted measurements from phone video.",
     version="0.2.0",
 )
+
+from .lab import router as lab_router
+
+app.include_router(lab_router)
+STATIC_ROOT = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def lab_workbench() -> FileResponse:
+    return FileResponse(STATIC_ROOT / "index.html")
 
 
 @app.get("/healthz", tags=["health"])
